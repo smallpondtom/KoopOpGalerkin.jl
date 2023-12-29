@@ -1,0 +1,7 @@
+name = "KoopOpGalerkin"
+uuid = "6c12b2f5-39cd-4542-9265-3cb5b116aed4"
+authors = ["tkoike3 "]
+version = "0.1.0"
+
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
