@@ -36,7 +36,7 @@ x1 = KSol[1, :]
 x2 = KSol[2, :]
 
 ## ODE45 results for comparison
-function vanderpol!(xdot, x, p, t)
+function cubicDuffing!(xdot, x, p, t)
     ϵ, γ = p
     x1 = x[1]
     x2 = x[2]
@@ -45,7 +45,7 @@ function vanderpol!(xdot, x, p, t)
     return xdot
 end
 
-prob = ODEProblem(vanderpol!, x0, (0.0, tf), [ϵ, γ])
+prob = ODEProblem(cubicDuffing!, x0, (0.0, tf), [ϵ, γ])
 sol = solve(prob, Tsit5(), saveat = tk)
 
 ## Plotting results
