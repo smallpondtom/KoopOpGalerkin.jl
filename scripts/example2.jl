@@ -7,6 +7,7 @@ using GLMakie
 
 const KOG = KoopOpGalerkin
 const NORMALIZE = false
+const REGULARIZE = true
 
 ## Equation parameters for the Duffing Oscillator
 alpha = 1.0
@@ -14,7 +15,7 @@ beta = 2.0
 delta = 0.4
 
 # Other settings
-nt = 100
+nt = 10000
 x10 = 1.0  # Initial x1
 x20 = 0.0  # Initial x2
 x0 = [x10, x20]
@@ -77,6 +78,7 @@ sol = solve(prob, Tsit5(), saveat = tk)
 
 
 ## EDMD for comparison
+# TODO: The EDMD results are incredibly off. Probably something wrong with the implementation.
 # dsol = sol(tk, Val{1})  # generate derivative data
 dsol = sol(range(tk.step.hi, tf+tk.step.hi, length=nt))
 
@@ -92,7 +94,11 @@ dstates_n = KOG.normalize(dsol[:,:], lb_dstates, ub_dstates, -1, 1)
 ## Lift the states and derivatives
 n_KO = 10
 Xm_lift, Xp_lift, Ms = KOG.lift_data_RBF(states_n, dstates_n, n_KO; verbose=true)
-Ã, ro = KOG.EDMD(Xm_lift, Xp_lift, 9)
+if REGULARIZE
+    Ã, ro = KOG.TREDMD(Xm_lift, Xp_lift, 9, 0)
+else
+    Ã, ro = KOG.EDMD(Xm_lift, Xp_lift, 0)
+end
 
 ## Simulate the EDMD linearized system
 function duffing2noforce_EDMD!(dxdt, x, Ã, t)

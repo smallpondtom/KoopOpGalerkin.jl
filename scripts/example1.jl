@@ -7,6 +7,7 @@ using GLMakie
 
 const KOG = KoopOpGalerkin
 const NORMALIZE = false
+const REGULARIZE = true
 
 ## Equation parameters
 sm = 1.0  # Mass
@@ -15,7 +16,7 @@ sa = 1.0  # Unit transformation constant
 se = 0.001 # Small parameter
 
 ## Other settings
-nt = 100
+nt = 10000
 q0 = 1.0  # Initial q
 p0 = 0.0  # Initial p
 x0 = [q0, p0]
@@ -79,8 +80,8 @@ p_vector = [sm, sk, se, sa, x1max, x2max]
 prob = ODEProblem(duffing1!, x0, (0.0, tf), p_vector)
 sol = solve(prob, Tsit5(), saveat = tk)
 
-
 ## EDMD for comparison
+# TODO: The EDMD results are incredibly off. Probably something wrong with the implementation.
 # dsol = sol(tk, Val{1})  # generate derivative data
 dsol = sol(range(tk.step.hi, tf+tk.step.hi, length=nt))
 
@@ -96,7 +97,11 @@ dstates_n = KOG.normalize(dsol[:,:], lb_dstates, ub_dstates, -1, 1)
 ## Lift the states and derivatives
 n_KO = 20
 Xm_lift, Xp_lift, Ms = KOG.lift_data_RBF(states_n, dstates_n, n_KO; verbose=true)
-Ã, ro = KOG.TREDMD(Xm_lift, Xp_lift, 10, 0)
+if REGULARIZE
+    Ã, ro = KOG.TREDMD(Xm_lift, Xp_lift, 10, 5)
+else
+    Ã, ro = KOG.EDMD(Xm_lift, Xp_lift, 0)
+end
 
 ## Simulate the EDMD linearized system
 function duffing1_EDMD!(dxdt, x, Ã, t)
