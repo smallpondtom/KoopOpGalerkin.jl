@@ -7,7 +7,7 @@ using GLMakie
 
 const KOG = KoopOpGalerkin
 const NORMALIZE = false
-const REGULARIZE = true
+const REGULARIZE = false
 
 ## Equation parameters for the Duffing Oscillator
 alpha = 1.0
@@ -15,12 +15,13 @@ beta = 2.0
 delta = 0.4
 
 # Other settings
-nt = 10000
+nt = 1000
 x10 = 1.0  # Initial x1
 x20 = 0.0  # Initial x2
 x0 = [x10, x20]
 tf = 20.0  # Final time
 tk = range(0, tf, length = nt)
+dt = tk[2] - tk[1]
 
 ## Run ODE45 system to obtain the L∞ norm of x1 and x2
 if NORMALIZE
@@ -92,22 +93,31 @@ ub_dstates = [maximum(dsol[i,:]) for i = 1:Nx]
 dstates_n = KOG.normalize(dsol[:,:], lb_dstates, ub_dstates, -1, 1)
 
 ## Lift the states and derivatives
-n_KO = 10
+n_KO = 20
 Xm_lift, Xp_lift, Ms = KOG.lift_data_RBF(states_n, dstates_n, n_KO; verbose=true)
 if REGULARIZE
-    Ã, ro = KOG.TREDMD(Xm_lift, Xp_lift, 9, 0)
+    Φ, Ω, Ã, ro = KOG.TREDMD(Xm_lift, Xp_lift, dt, 0.1, 5)
 else
-    Ã, ro = KOG.EDMD(Xm_lift, Xp_lift, 0)
+    Φ, Ω, Ã, ro = KOG.EDMD(Xm_lift, Xp_lift, dt, 3)
 end
 
 ## Simulate the EDMD linearized system
-function duffing2noforce_EDMD!(dxdt, x, Ã, t)
-    dxdt .= Ã * x
-end
 x0_lift = KOG.lift_state_RBF(x0, n_KO, Ms)
-prob = ODEProblem(duffing2noforce_EDMD!, x0_lift[1:ro], (0.0, tf), Ã)
-sol_EDMD = solve(prob, Tsit5(), saveat = tk)
+sol_EDMD = zeros(ComplexF64, ro, nt)
+b = Φ \ x0_lift
+for i = 1:nt
+    sol_EDMD[:, i] = exp.(Ω * tk[i]) .* b
+end
+sol_EDMD = Φ * sol_EDMD
+sol_EDMD = real.(sol_EDMD)  # remove imaginary part
 
+# Simulate the Ã matrix linear system from EDMD
+# function duffing2noforce_EDMD!(dxdt, x, Ã, t)
+#     dxdt .= Ã * x
+# end
+# x0_lift = KOG.lift_state_RBF(x0, n_KO, Ms)
+# prob = ODEProblem(duffing2noforce_EDMD!, x0_lift[1:ro], (0.0, tf), Ã)
+# sol_EDMD = solve(prob, Tsit5(), saveat = tk)
 
 ## Plotting results
 fig = Figure(size=(800, 600))
