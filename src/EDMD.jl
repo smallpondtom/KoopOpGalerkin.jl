@@ -44,7 +44,9 @@ function EDMD(Xm::Matrix, Xp::Matrix, dt::Real, en_level::Int64=6)
         # Reconstruct the eigendecomposition of A 
         Φ = Xp * Vtm[1:r,:]' * Σm_inv[1:r,1:r] * W
 
-        return Φ, Ω, Ã, r
+        Ā = real.(Φ * Diagonal(Ω) / Φ)[1:r,1:r]
+
+        return Φ, Ω, Ā, r
     else
         Σm_inv = Diagonal(Σm) \ I(Nx)
         Ā = Xp * Vtm' * Σm_inv * Um'
@@ -53,6 +55,7 @@ function EDMD(Xm::Matrix, Xp::Matrix, dt::Real, en_level::Int64=6)
         Λ = FOO.values
         Ω = log.(Λ) / dt
         Φ = Xp * Vtm' * Σm_inv * W
+        Ā = real.(Φ * Diagonal(Ω) / Φ)
 
         return Φ, Ω, Ā, Nx
     end
