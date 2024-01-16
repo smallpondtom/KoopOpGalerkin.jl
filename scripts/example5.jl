@@ -51,8 +51,6 @@ fx[:, :, 4] = [
 ## Koopman Solution
 c = 6
 KSol = KOG.KoopmanSolve(c, fx, x0, tk)
-x1 = KSol[1, :]
-x2 = KSol[2, :]
 
 ## ODE45 results for comparison
 function vanderpolDuffing!(xdot, x, p, t)
